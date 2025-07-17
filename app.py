@@ -64,12 +64,12 @@ def get_llm():
             st.error("Please set HUGGINGFACEHUB_API_TOKEN in your Streamlit secrets")
             return None
             
+        # Set the environment variable for HuggingFace authentication
         os.environ["HUGGINGFACEHUB_API_TOKEN"] = st.secrets["HUGGINGFACEHUB_API_TOKEN"]
         
-        # Use HuggingFaceEndpoint with minimal parameters
+        # Use HuggingFaceEndpoint without token parameter
         return HuggingFaceEndpoint(
-            repo_id="google/flan-t5-base",
-            token=st.secrets["HUGGINGFACEHUB_API_TOKEN"]
+            repo_id="google/flan-t5-base"
         )
     except Exception as e:
         st.error(f"Error initializing LLM: {str(e)}")
