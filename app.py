@@ -67,10 +67,11 @@ def get_llm():
         # Set the environment variable for HuggingFace authentication
         os.environ["HUGGINGFACEHUB_API_TOKEN"] = st.secrets["HUGGINGFACEHUB_API_TOKEN"]
         
-        # Use HuggingFaceHub with minimal parameters
+        # Use HuggingFaceHub with required task parameter
         return HuggingFaceHub(
             repo_id="google/flan-t5-base",
-            model_kwargs={"temperature": 0.5}
+            task="text2text-generation",
+            model_kwargs={"temperature": 0.5, "max_length": 512}
         )
     except Exception as e:
         st.error(f"Error initializing LLM: {str(e)}")
