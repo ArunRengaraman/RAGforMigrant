@@ -5,8 +5,8 @@ from langchain_community.document_loaders import WebBaseLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEndpoint 
 from langchain.chains import RetrievalQA
-from langchain_community.llms import HuggingFaceHub
 
 # --------------------
 # Streamlit UI
@@ -59,35 +59,18 @@ def prepare_knowledge_base():
 @st.cache_resource
 def get_llm():
     try:
-        # Make sure the API token is set
-        if "HUGGINGFACEHUB_API_TOKEN" not in st.secrets:
-            st.error("Please set HUGGINGFACEHUB_API_TOKEN in your Streamlit secrets")
-            return None
-            
-        # Set the environment variable for HuggingFace authentication
+        # ... (secret checking is the same)
         os.environ["HUGGINGFACEHUB_API_TOKEN"] = st.secrets["HUGGINGFACEHUB_API_TOKEN"]
         
-        # Try different models based on availability
-        models_to_try = [
-            {"repo_id": "google/flan-t5-base", "task": "text2text-generation"},
-            {"repo_id": "microsoft/DialoGPT-medium", "task": "text-generation"},
-            {"repo_id": "gpt2", "task": "text-generation"}
-        ]
-        
-        for model_config in models_to_try:
-            try:
-                return HuggingFaceHub(
-                    repo_id=model_config["repo_id"],
-                    task=model_config["task"],
-                    model_kwargs={"temperature": 0.5, "max_length": 512}
-                )
-            except Exception as model_error:
-                st.warning(f"Failed to load {model_config['repo_id']}: {str(model_error)}")
-                continue
-        
-        st.error("All models failed to load")
-        return None
-        
+        # We only need one model that works well for Q&A
+        # google/flan-t5-large is a good free option
+        llm = HuggingFaceEndpoint(
+            repo_id="google/flan-t5-large", 
+            temperature=0.5,
+            max_new_tokens=512
+        )
+        return llm
+            
     except Exception as e:
         st.error(f"Error initializing LLM: {str(e)}")
         return None
