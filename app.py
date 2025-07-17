@@ -7,7 +7,6 @@ from langchain.vectorstores import FAISS
 from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.chains import RetrievalQA
 from langchain_community.llms import HuggingFaceHub
-os.environ["HUGGINGFACEHUB_API_TOKEN"] = st.secrets["HUGGINGFACEHUB_API_TOKEN"]
 # --------------------
 # Streamlit UI
 # --------------------
@@ -57,6 +56,7 @@ def prepare_knowledge_base():
 # --------------------
 
 def get_llm():
+    os.environ["HUGGINGFACEHUB_API_TOKEN"] = st.secrets["HUGGINGFACEHUB_API_TOKEN"]
     return HuggingFaceHub(
         repo_id="google/flan-t5-base",  # or any valid public model
         model_kwargs={"temperature": 0.5, "max_length": 100}
