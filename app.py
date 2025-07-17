@@ -67,12 +67,27 @@ def get_llm():
         # Set the environment variable for HuggingFace authentication
         os.environ["HUGGINGFACEHUB_API_TOKEN"] = st.secrets["HUGGINGFACEHUB_API_TOKEN"]
         
-        # Use HuggingFaceHub with required task parameter
-        return HuggingFaceHub(
-            repo_id="google/flan-t5-base",
-            task="text2text-generation",
-            model_kwargs={"temperature": 0.5, "max_length": 512}
-        )
+        # Try different models based on availability
+        models_to_try = [
+            {"repo_id": "google/flan-t5-base", "task": "text2text-generation"},
+            {"repo_id": "microsoft/DialoGPT-medium", "task": "text-generation"},
+            {"repo_id": "gpt2", "task": "text-generation"}
+        ]
+        
+        for model_config in models_to_try:
+            try:
+                return HuggingFaceHub(
+                    repo_id=model_config["repo_id"],
+                    task=model_config["task"],
+                    model_kwargs={"temperature": 0.5, "max_length": 512}
+                )
+            except Exception as model_error:
+                st.warning(f"Failed to load {model_config['repo_id']}: {str(model_error)}")
+                continue
+        
+        st.error("All models failed to load")
+        return None
+        
     except Exception as e:
         st.error(f"Error initializing LLM: {str(e)}")
         return None
