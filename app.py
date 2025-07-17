@@ -57,9 +57,8 @@ def prepare_knowledge_base():
 # --------------------
 
 def get_llm():
-    os.environ["HUGGINGFACEHUB_API_TOKEN"] = os.getenv("HUGGINGFACEHUB_API_TOKEN")
     return HuggingFaceHub(
-        repo_id="google/flan-t5-small",
+        repo_id="google/flan-t5-small",  # or any valid public model
         model_kwargs={"temperature": 0.5, "max_length": 100}
     )
 
