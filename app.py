@@ -1,5 +1,6 @@
 import streamlit as st
 import time
+import os
 from langchain_community.document_loaders import WebBaseLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores import FAISS
