@@ -1,8 +1,10 @@
 streamlit
 langchain
 langchain-community
+langchain-huggingface
 faiss-cpu
 tiktoken
 beautifulsoup4
 requests
 sentence-transformers
+pydantic>=2.0.0
