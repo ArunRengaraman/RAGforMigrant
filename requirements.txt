@@ -1,7 +1,7 @@
 streamlit
 langchain
-chromadb
 langchain-community
-sentence-transformers
+chromadb[all]
+tiktoken
 beautifulsoup4
 requests
