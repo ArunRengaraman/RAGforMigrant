@@ -66,11 +66,9 @@ def get_llm():
             
         os.environ["HUGGINGFACEHUB_API_TOKEN"] = st.secrets["HUGGINGFACEHUB_API_TOKEN"]
         
-        # Use HuggingFaceEndpoint instead of HuggingFaceHub
+        # Use HuggingFaceEndpoint with minimal parameters
         return HuggingFaceEndpoint(
             repo_id="google/flan-t5-base",
-            temperature=0.5,
-            max_length=512,
             token=st.secrets["HUGGINGFACEHUB_API_TOKEN"]
         )
     except Exception as e:
