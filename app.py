@@ -6,7 +6,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain.chains import RetrievalQA
-from langchain_huggingface import HuggingFaceEndpoint
+from langchain_community.llms import HuggingFaceHub
 
 # --------------------
 # Streamlit UI
@@ -54,7 +54,7 @@ def prepare_knowledge_base():
         return None
 
 # --------------------
-# LLM: HuggingFace Endpoint
+# LLM: HuggingFace Hub
 # --------------------
 @st.cache_resource
 def get_llm():
@@ -67,9 +67,10 @@ def get_llm():
         # Set the environment variable for HuggingFace authentication
         os.environ["HUGGINGFACEHUB_API_TOKEN"] = st.secrets["HUGGINGFACEHUB_API_TOKEN"]
         
-        # Use HuggingFaceEndpoint without token parameter
-        return HuggingFaceEndpoint(
-            repo_id="google/flan-t5-base"
+        # Use HuggingFaceHub with minimal parameters
+        return HuggingFaceHub(
+            repo_id="google/flan-t5-base",
+            model_kwargs={"temperature": 0.5}
         )
     except Exception as e:
         st.error(f"Error initializing LLM: {str(e)}")
@@ -91,14 +92,17 @@ if "vectordb" not in st.session_state:
 # --------------------
 if user_question and st.session_state.get("vectordb"):
     try:
+        st.info("Initializing LLM...")
         llm = get_llm()
         if llm:
+            st.info("LLM initialized successfully. Setting up QA chain...")
             qa_chain = RetrievalQA.from_chain_type(
                 llm=llm,
                 retriever=st.session_state.vectordb.as_retriever(),
                 return_source_documents=True
             )
             
+            st.info("Processing your question...")
             start = time.time()
             result = qa_chain({"query": user_question})
             end = time.time()
@@ -112,6 +116,11 @@ if user_question and st.session_state.get("vectordb"):
                     st.markdown(f"**Source:** {doc.metadata.get('source', 'unknown')}")
                     st.write(doc.page_content[:500] + "...")
                     st.markdown("---")
+        else:
+            st.error("Failed to initialize LLM. Please check your configuration.")
     except Exception as e:
         st.error(f"Error processing question: {str(e)}")
+        st.error(f"Error type: {type(e).__name__}")
+        import traceback
+        st.error(f"Full traceback: {traceback.format_exc()}")
         st.info("Please try rephrasing your question or check if the knowledge base is loaded correctly.")
