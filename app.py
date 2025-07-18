@@ -54,16 +54,20 @@ def prepare_knowledge_base():
         return None
 
 # --------------------
-# LLM: HuggingFace Hub
+# LLM: HuggingFace Endpoint
 # --------------------
 @st.cache_resource
 def get_llm():
     try:
-        # ... (secret checking is the same)
+        # Check if API token is set
+        if "HUGGINGFACEHUB_API_TOKEN" not in st.secrets:
+            st.error("Please set HUGGINGFACEHUB_API_TOKEN in your Streamlit secrets")
+            return None
+            
+        # Set environment variable for authentication
         os.environ["HUGGINGFACEHUB_API_TOKEN"] = st.secrets["HUGGINGFACEHUB_API_TOKEN"]
         
-        # We only need one model that works well for Q&A
-        # google/flan-t5-large is a good free option
+        # Use HuggingFaceEndpoint with flan-t5-large (better performance than base)
         llm = HuggingFaceEndpoint(
             repo_id="google/flan-t5-large", 
             temperature=0.5,
