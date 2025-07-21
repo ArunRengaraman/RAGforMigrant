@@ -11,7 +11,7 @@ from utils import groq_llm, huggingface_instruct_embedding
 
 st.set_page_config(layout='wide', page_title="Objectbox and Langchain")
 
-st.title('Objectbox VectorstoreDB with LLAMA3')
+st.title('RAG for Migrants')
 
 prompt = ChatPromptTemplate.from_template(
     """
