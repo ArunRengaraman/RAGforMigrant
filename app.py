@@ -1,129 +1,64 @@
-import streamlit as st
+# import all necessary libraries
 import time
-import os
-from langchain_community.document_loaders import WebBaseLoader
+import streamlit as st
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.vectorstores import FAISS
-from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_huggingface import HuggingFaceEndpoint 
-from langchain.chains import RetrievalQA
+from langchain_community.document_loaders import PyPDFDirectoryLoader
+from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain.chains import create_retrieval_chain
+from langchain_objectbox.vectorstores import ObjectBox
+from langchain_core.prompts import ChatPromptTemplate
+from utils import groq_llm, huggingface_instruct_embedding
 
-# --------------------
-# Streamlit UI
-# --------------------
-st.set_page_config(page_title="Migrant Resource Assistant", layout="wide")
-st.title("🧭 RAG-based Resource Assistant for Migrant Families")
-user_question = st.text_input("❓ Ask a question about resources, support, or policies:")
+st.set_page_config(layout='wide', page_title="Objectbox and Langchain")
 
-# --------------------
-# Predefined URLs to scrape
-# --------------------
-PREDEFINED_URLS = [
-    "https://www.acf.hhs.gov/orr",  # Office of Refugee Resettlement
-    "https://www.uscis.gov/humanitarian/refugees-and-asylees",
-    "https://www.usa.gov/immigration-and-citizenship",
-    "https://www.womensrefugeecommission.org/",
-    "https://www.unhcr.org/en-us/"
-]
+st.title('Objectbox VectorstoreDB with LLAMA3')
 
-# --------------------
-# Load Embeddings (cached)
-# --------------------
-@st.cache_resource
-def load_embeddings():
-    return HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+prompt = ChatPromptTemplate.from_template(
+    """
+    
+    Answer the questions based on the provided context only.
+    Please provide the most accurate response based on the question
+    <context>
+    {context}
+    <context>
+    Questions: {input}
 
-# --------------------
-# Load and embed website content (cached)
-# --------------------
-@st.cache_resource
-def prepare_knowledge_base():
-    try:
-        loader = WebBaseLoader(PREDEFINED_URLS)
-        raw_docs = loader.load()
-        splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-        chunks = splitter.split_documents(raw_docs)
-        embeddings = load_embeddings()
-        vectordb = FAISS.from_documents(
-            documents=chunks,
-            embedding=embeddings
-        )
-        return vectordb
-    except Exception as e:
-        st.error(f"Error loading knowledge base: {str(e)}")
-        return None
+    """
+)
 
-# --------------------
-# LLM: HuggingFace Endpoint
-# --------------------
-@st.cache_resource
-def get_llm():
-    try:
-        # Check if API token is set
-        if "HUGGINGFACEHUB_API_TOKEN" not in st.secrets:
-            st.error("Please set HUGGINGFACEHUB_API_TOKEN in your Streamlit secrets")
-            return None
-            
-        # Set environment variable for authentication
-        os.environ["HUGGINGFACEHUB_API_TOKEN"] = st.secrets["HUGGINGFACEHUB_API_TOKEN"]
-        
-        # Use HuggingFaceEndpoint with flan-t5-large (better performance than base)
-        llm = HuggingFaceEndpoint(
-            repo_id="google/flan-t5-large", 
-            temperature=0.5,
-            max_new_tokens=512
-        )
-        return llm
-            
-    except Exception as e:
-        st.error(f"Error initializing LLM: {str(e)}")
-        return None
+# function for vector embedding and Objectbox VectorstoreDB
+def vector_embedding():
 
-# --------------------
-# Load the vectorstore on startup
-# --------------------
-if "vectordb" not in st.session_state:
-    with st.spinner("Loading knowledge base from trusted websites..."):
-        st.session_state.vectordb = prepare_knowledge_base()
-        if st.session_state.vectordb:
-            st.success("Knowledge base is ready!")
-        else:
-            st.error("Failed to load knowledge base")
+    if 'vectors' not in st.session_state:
+        st.session_state.embeddings = huggingface_instruct_embedding()
+        st.session_state.loader = PyPDFDirectoryLoader('End-to-End-RAG-Project-using-ObjectBox-and-Langchain/us-census-data')
+        st.session_state.docs = st.session_state.loader.load()
+        st.session_state.text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+        st.session_state.final_documents = st.session_state.text_splitter.split_documents(st.session_state.docs[:200])
+        st.session_state.vectors = ObjectBox.from_documents(st.session_state.final_documents, st.session_state.embeddings, embedding_dimensions=768, db_directory='End-to-End-RAG-Project-using-ObjectBox-and-Langchain/objectbox')
 
-# --------------------
-# Question-answering logic
-# --------------------
-if user_question and st.session_state.get("vectordb"):
-    try:
-        st.info("Initializing LLM...")
-        llm = get_llm()
-        if llm:
-            st.info("LLM initialized successfully. Setting up QA chain...")
-            qa_chain = RetrievalQA.from_chain_type(
-                llm=llm,
-                retriever=st.session_state.vectordb.as_retriever(),
-                return_source_documents=True
-            )
-            
-            st.info("Processing your question...")
-            start = time.time()
-            result = qa_chain({"query": user_question})
-            end = time.time()
-            
-            st.subheader("📢 Answer")
-            st.write(result["result"])
-            st.caption(f"⏱️ Response Time: {end - start:.2f} seconds")
-            
-            with st.expander("📄 Retrieved Document Snippets"):
-                for doc in result["source_documents"]:
-                    st.markdown(f"**Source:** {doc.metadata.get('source', 'unknown')}")
-                    st.write(doc.page_content[:500] + "...")
-                    st.markdown("---")
-        else:
-            st.error("Failed to initialize LLM. Please check your configuration.")
-    except Exception as e:
-        st.error(f"Error processing question: {str(e)}")
-        st.error(f"Error type: {type(e).__name__}")
-        import traceback
-        st.error(f"Full traceback: {traceback.format_exc()}")
-        st.info("Please try rephrasing your question or check if the knowledge base is loaded correctly.")
+
+if st.button('Embedd Documents'):
+    vector_embedding()
+    st.write('ObjectBox Database is ready. You can now enter your question')
+
+user_input = st.text_input('Enter your question from documents')
+
+
+if user_input:
+    document_chain = create_stuff_documents_chain(groq_llm(), prompt)
+    retriever = st.session_state.vectors.as_retriever()
+    retrieval_chain = create_retrieval_chain(retriever, document_chain)
+    start = time.process_time()
+
+    response = retrieval_chain.invoke({'input': user_input})
+    st.write(response['answer'])
+    st.write(f'response time: {(time.process_time() - start):.2f} secs')
+
+
+     # With a streamlit expander
+    with st.expander("Document Similarity Search"):
+        # Find the relevant chunks
+        for i, doc in enumerate(response["context"]):
+            st.write(doc.page_content)
+            st.write("--------------------------------")
