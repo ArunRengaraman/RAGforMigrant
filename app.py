@@ -10,6 +10,9 @@ from langchain_objectbox.vectorstores import ObjectBox
 from langchain_core.prompts import ChatPromptTemplate
 from utils import groq_llm, huggingface_instruct_embedding
 import shutil
+import tempfile
+
+
 # ---- Streamlit Page Config ----
 st.set_page_config(layout='wide', page_title="RAG for Migrants", page_icon="🌍")
 st.title('🌍 RAG for Migrants')
