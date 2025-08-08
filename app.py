@@ -39,29 +39,35 @@ prompt = ChatPromptTemplate.from_template(
     """
 )
 
-import shutil
-
+# ---- Embedding Function ----
 def vector_embedding():
     if 'vectors' not in st.session_state:
         st.session_state.embeddings = huggingface_instruct_embedding()
-        st.session_state.loader = PyPDFDirectoryLoader('RAGforMigrant/data')
-        st.session_state.docs = st.session_state.loader.load()
+
+        if upload_docs:
+            docs = []
+            for file in upload_docs:
+                loader = PyPDFLoader(file)
+                docs.extend(loader.load())
+            st.session_state.docs = docs
+        else:
+            st.session_state.loader = PyPDFDirectoryLoader('RAGforMigrant/data')
+            st.session_state.docs = st.session_state.loader.load()
+
         st.session_state.text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=1000, chunk_overlap=200
+            chunk_size=chunk_size, chunk_overlap=chunk_overlap
         )
         st.session_state.final_documents = st.session_state.text_splitter.split_documents(
-            st.session_state.docs[:200]
+            st.session_state.docs
         )
 
-        # Use a writable path on Streamlit Cloud
+        # Use writable path on Streamlit Cloud
         if os.environ.get("STREAMLIT_RUNTIME", None):
             db_path = os.path.join("/tmp", "objectbox")
         else:
-            db_path = os.path.join("End-to-End-RAG-Project-using-ObjectBox-and-Langchain", "objectbox")
-
-        # Clean up any old DB to avoid ObjectBox CoreException
-        if os.path.exists(db_path):
-            shutil.rmtree(db_path, ignore_errors=True)
+            db_path = os.path.join(
+                "End-to-End-RAG-Project-using-ObjectBox-and-Langchain", "objectbox"
+            )
         os.makedirs(db_path, exist_ok=True)
 
         st.session_state.vectors = ObjectBox.from_documents(
@@ -70,7 +76,6 @@ def vector_embedding():
             embedding_dimensions=768,
             db_directory=db_path
         )
-
 
 # ---- Embedding Trigger ----
 if st.sidebar.button('📥 Embed Documents'):
