@@ -10,7 +10,6 @@ from langchain_objectbox.vectorstores import ObjectBox
 from langchain_core.prompts import ChatPromptTemplate
 from utils import groq_llm, huggingface_instruct_embedding
 import shutil
-
 # ---- Streamlit Page Config ----
 st.set_page_config(layout='wide', page_title="RAG for Migrants", page_icon="🌍")
 st.title('🌍 RAG for Migrants')
@@ -41,6 +40,7 @@ prompt = ChatPromptTemplate.from_template(
 )
 
 
+
 def vector_embedding():
     if 'vectors' not in st.session_state:
         st.session_state.embeddings = huggingface_instruct_embedding()
@@ -53,13 +53,10 @@ def vector_embedding():
             st.session_state.docs[:200]
         )
 
-        # Use a writable path on Streamlit Cloud
-        if os.environ.get("STREAMLIT_RUNTIME", None):
-            db_path = os.path.join("/tmp", "objectbox")
-        else:
-            db_path = os.path.join("End-to-End-RAG-Project-using-ObjectBox-and-Langchain", "objectbox")
+        # Always use writable /tmp path on Streamlit Cloud
+        db_path = os.path.join("/tmp", "objectbox")
 
-        # Clean up any old DB to avoid ObjectBox CoreException
+        # Remove any existing DB to prevent CoreException
         if os.path.exists(db_path):
             shutil.rmtree(db_path, ignore_errors=True)
         os.makedirs(db_path, exist_ok=True)
@@ -67,7 +64,7 @@ def vector_embedding():
         st.session_state.vectors = ObjectBox.from_documents(
             st.session_state.final_documents,
             st.session_state.embeddings,
-            embedding_dimensions=768,
+            embedding_dimensions=768,  # must match your embedding model output size
             db_directory=db_path
         )
 
