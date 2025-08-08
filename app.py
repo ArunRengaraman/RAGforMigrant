@@ -53,21 +53,23 @@ def vector_embedding():
             st.session_state.docs[:200]
         )
 
-        # Always use writable /tmp path on Streamlit Cloud
-        db_path = os.path.join("/tmp", "objectbox")
+        # Always use a fresh writable path
+        db_path = os.path.join(tempfile.gettempdir(), "objectbox")
 
-        # Remove any existing DB to prevent CoreException
+        # Wipe old database to prevent lock/schema errors
         if os.path.exists(db_path):
             shutil.rmtree(db_path, ignore_errors=True)
+
         os.makedirs(db_path, exist_ok=True)
 
         st.session_state.vectors = ObjectBox.from_documents(
             st.session_state.final_documents,
             st.session_state.embeddings,
-            embedding_dimensions=768,  # must match your embedding model output size
+            embedding_dimensions=768,  # must match model
             db_directory=db_path
         )
 
+        st.write(f"✅ ObjectBox DB created at: {db_path}")
 
 # ---- Embedding Trigger ----
 if st.sidebar.button('📥 Embed Documents'):
