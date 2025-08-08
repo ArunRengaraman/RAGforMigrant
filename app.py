@@ -56,8 +56,9 @@ def vector_embedding():
             st.session_state.docs[:200]
         )
 
-        # Always use a fresh writable path
-        db_path = os.path.join(tempfile.gettempdir(), "objectbox")
+        # Persistent path inside the Git repo
+        repo_root = os.path.dirname(os.path.abspath(__file__))  # path to app.py
+        db_path = os.path.join(repo_root, "objectbox")
 
         # Wipe old database to prevent lock/schema errors
         if os.path.exists(db_path):
@@ -73,6 +74,7 @@ def vector_embedding():
         )
 
         st.write(f"✅ ObjectBox DB created at: {db_path}")
+
 
 # ---- Embedding Trigger ----
 if st.sidebar.button('📥 Embed Documents'):
