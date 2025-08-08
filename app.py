@@ -46,19 +46,20 @@ user_input = st.text_input('Enter your question from documents')
 
 
 if user_input:
-    document_chain = create_stuff_documents_chain(groq_llm(), prompt)
-    retriever = st.session_state.vectors.as_retriever()
-    retrieval_chain = create_retrieval_chain(retriever, document_chain)
-    start = time.process_time()
+    if "vectors" not in st.session_state:
+        st.warning("Please click 'Embedd Documents' first to prepare the database.")
+    else:
+        document_chain = create_stuff_documents_chain(groq_llm(), prompt)
+        retriever = st.session_state.vectors.as_retriever()
+        retrieval_chain = create_retrieval_chain(retriever, document_chain)
+        start = time.process_time()
 
-    response = retrieval_chain.invoke({'input': user_input})
-    st.write(response['answer'])
-    st.write(f'response time: {(time.process_time() - start):.2f} secs')
+        response = retrieval_chain.invoke({'input': user_input})
+        st.write(response['answer'])
+        st.write(f'response time: {(time.process_time() - start):.2f} secs')
 
+        with st.expander("Document Similarity Search"):
+            for i, doc in enumerate(response["context"]):
+                st.write(doc.page_content)
+                st.write("--------------------------------")
 
-     # With a streamlit expander
-    with st.expander("Document Similarity Search"):
-        # Find the relevant chunks
-        for i, doc in enumerate(response["context"]):
-            st.write(doc.page_content)
-            st.write("--------------------------------")
