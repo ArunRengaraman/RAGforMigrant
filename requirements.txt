@@ -1,11 +1,33 @@
+# Core App
+streamlit
+langchain
+langchain-community
+langchain-core
+langchain-text-splitters
+chromadb
+objectbox
 
-langchain==0.1.20
-langchain-community==0.0.38
-langchain-core==0.1.52
-langchain-groq==0.1.3
-langchain-objectbox
-pypdf==4.2.0
-python-dotenv==1.0.1
+# LLM + Embeddings
+openai
+tiktoken
 sentence-transformers
 transformers
-torch
+huggingface-hub
+
+# PDF & Document Loaders
+pypdf
+pdfplumber
+python-docx
+
+# Web Scraping
+requests
+beautifulsoup4
+html2text
+
+# Utilities
+python-dotenv
+numpy
+pandas
+
+# Optional for async scraping & better performance
+aiohttp
