@@ -42,15 +42,15 @@ prompt = ChatPromptTemplate.from_template(
     """
 )
 
-
-
 def vector_embedding():
-    # Close any previously opened store
+    # Close any previously opened ObjectBox store
     if 'vectors' in st.session_state and st.session_state.vectors is not None:
         try:
-            st.session_state.vectors.close()  # Close the ObjectBox store
+            # Close underlying ObjectBox store to release lock
+            if hasattr(st.session_state.vectors, '_db') and st.session_state.vectors._db is not None:
+                st.session_state.vectors._db.close()
         except Exception as e:
-            st.warning(f"⚠️ Failed to close previous ObjectBox store: {e}")
+            st.warning(f"⚠️ Failed to close ObjectBox store: {e}")
         finally:
             st.session_state.vectors = None
 
