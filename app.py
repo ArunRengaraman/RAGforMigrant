@@ -26,8 +26,17 @@ top_k = st.sidebar.slider("Top K Documents", 1, 10, 3)
 upload_docs = st.sidebar.file_uploader("📄 Upload PDF(s)", type=["pdf"], accept_multiple_files=True)
 
 if st.sidebar.button("🗑 Clear Embeddings"):
+    if 'vectors' in st.session_state and st.session_state.vectors is not None:
+        try:
+            if hasattr(st.session_state.vectors, '_db') and st.session_state.vectors._db is not None:
+                st.session_state.vectors._db.close()
+        except Exception as e:
+            st.warning(f"⚠️ Failed to close ObjectBox store: {e}")
+        finally:
+            st.session_state.vectors = None
     st.session_state.clear()
     st.sidebar.success("Embeddings cleared. Please re-embed documents.")
+
 
 # ---- Prompt Template ----
 prompt = ChatPromptTemplate.from_template(
