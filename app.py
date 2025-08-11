@@ -45,35 +45,45 @@ prompt = ChatPromptTemplate.from_template(
 
 
 def vector_embedding():
-    if 'vectors' not in st.session_state:
-        st.session_state.embeddings = huggingface_instruct_embedding()
-        st.session_state.loader = PyPDFDirectoryLoader('RAGforMigrant/data')
-        st.session_state.docs = st.session_state.loader.load()
-        st.session_state.text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=1000, chunk_overlap=200
-        )
-        st.session_state.final_documents = st.session_state.text_splitter.split_documents(
-            st.session_state.docs[:200]
-        )
+    # Close any previously opened store
+    if 'vectors' in st.session_state and st.session_state.vectors is not None:
+        try:
+            st.session_state.vectors.close()  # Close the ObjectBox store
+        except Exception as e:
+            st.warning(f"⚠️ Failed to close previous ObjectBox store: {e}")
+        finally:
+            st.session_state.vectors = None
 
-        # Persistent path inside the Git repo
-        repo_root = os.path.dirname(os.path.abspath(__file__))  # path to app.py
-        db_path = os.path.join(repo_root, "objectbox")
+    # Prepare embeddings and load PDFs
+    st.session_state.embeddings = huggingface_instruct_embedding()
+    st.session_state.loader = PyPDFDirectoryLoader('RAGforMigrant/data')
+    st.session_state.docs = st.session_state.loader.load()
+    st.session_state.text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=1000, chunk_overlap=200
+    )
+    st.session_state.final_documents = st.session_state.text_splitter.split_documents(
+        st.session_state.docs[:200]
+    )
 
-        # Wipe old database to prevent lock/schema errors
-        if os.path.exists(db_path):
-            shutil.rmtree(db_path, ignore_errors=True)
+    # Persistent path inside the Git repo
+    repo_root = os.path.dirname(os.path.abspath(__file__))  # path to app.py
+    db_path = os.path.join(repo_root, "objectbox")
 
-        os.makedirs(db_path, exist_ok=True)
+    # Remove old DB directory to avoid schema/lock errors
+    if os.path.exists(db_path):
+        shutil.rmtree(db_path, ignore_errors=True)
+    os.makedirs(db_path, exist_ok=True)
 
-        st.session_state.vectors = ObjectBox.from_documents(
-            st.session_state.final_documents,
-            st.session_state.embeddings,
-            embedding_dimensions=768,  # must match model
-            db_directory=db_path
-        )
+    # Create new ObjectBox store
+    st.session_state.vectors = ObjectBox.from_documents(
+        st.session_state.final_documents,
+        st.session_state.embeddings,
+        embedding_dimensions=768,
+        db_directory=db_path
+    )
 
-        st.write(f"✅ ObjectBox DB created at: {db_path}")
+    st.write(f"✅ ObjectBox DB created at: {db_path}")
+
 
 
 # ---- Embedding Trigger ----
