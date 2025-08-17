@@ -1,3 +1,4 @@
+
 # import all necessary libraries
 import time
 import streamlit as st
@@ -23,7 +24,7 @@ st.markdown("Empowering migrants with information retrieval using **ObjectBox** 
 st.sidebar.header("⚙️ Configuration")
 chunk_size = st.sidebar.slider("Chunk Size", 500, 2000, 1000, step=100)
 chunk_overlap = st.sidebar.slider("Chunk Overlap", 50, 500, 200, step=50)
-top_k = st.sidebar.slider("Top K Documents", 1, 10, 3)
+top_k = st.sidebar.slider("Top K Documents", 1, 10, 5)
 upload_docs = st.sidebar.file_uploader("📄 Upload PDF(s)", type=["pdf"], accept_multiple_files=True)
 
 
